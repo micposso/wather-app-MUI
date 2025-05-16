@@ -1,41 +1,18 @@
-// Required dependencies (install before running):
-// npm install @mui/material @emotion/react @emotion/styled react-icons axios
-
+// src/App.jsx
 import React, { useState, useEffect } from "react";
+import { Container, Typography } from "@mui/material";
 import axios from "axios";
-import {
-  Container,
-  TextField,
-  Button,
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-} from "@mui/material";
-import {
-  WiDaySunny,
-  WiCloud,
-  WiRain,
-  WiThunderstorm,
-  WiDayCloudy,
-} from "react-icons/wi";
-
-const weatherIcons = {
-  Clear: <WiDaySunny size={48} />,
-  Clouds: <WiCloud size={48} />,
-  Rain: <WiRain size={48} />,
-  Thunderstorm: <WiThunderstorm size={48} />,
-  Drizzle: <WiRain size={48} />,
-  Mist: <WiDayCloudy size={48} />,
-};
+import SearchField from "./components/SearchField";
+import CurrentWeather from "./components/CurrentWeather";
+import Forecast from "./components/Forecast";
 
 const App = () => {
   const [city, setCity] = useState("");
   const [weather, setWeather] = useState(null);
   const [forecast, setForecast] = useState([]);
-  const [suggestions, setSuggestions] = useState([]);
   const [coords, setCoords] = useState(null);
-  const apiKey = process.env.REACT_APP_OPENWEATHER_API_KEY; // replace this with your OpenWeather API key
+  const [suggestions, setSuggestions] = useState([]);
+  const apiKey = import.meta.env.VITE_OPENWEATHER_API_KEY;
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
@@ -76,6 +53,17 @@ const App = () => {
     }
   };
 
+  const fetchCitySuggestions = async (query) => {
+    if (!query) return setSuggestions([]);
+    const res = await axios.get(
+      `http://api.openweathermap.org/geo/1.0/direct?q=${query}&limit=5&appid=${apiKey}`
+    );
+    const names = res.data.map(
+      (c) => `${c.name}${c.state ? ", " + c.state : ""}, ${c.country}`
+    );
+    setSuggestions(names);
+  };
+
   const filterDailyForecast = (list) => {
     const days = {};
     list.forEach((entry) => {
@@ -93,60 +81,15 @@ const App = () => {
       <Typography variant="h4" gutterBottom align="center">
         Weather App
       </Typography>
-      <TextField
-        fullWidth
-        label="Enter City"
-        value={city}
-        onChange={(e) => setCity(e.target.value)}
-        margin="normal"
+      <SearchField
+        city={city}
+        setCity={setCity}
+        fetchWeatherByCity={fetchWeatherByCity}
+        suggestions={suggestions}
+        fetchCitySuggestions={fetchCitySuggestions}
       />
-      <Button variant="contained" onClick={fetchWeatherByCity} fullWidth>
-        Get Weather
-      </Button>
-
-      {weather && (
-        <Card sx={{ mt: 4 }}>
-          <CardContent>
-            <Typography variant="h5">{weather.name}</Typography>
-            <Typography variant="h6">
-              {weather.weather[0].main}{" "}
-              {weatherIcons[weather.weather[0].main] || "☁️"}
-            </Typography>
-            <Typography>Temperature: {weather.main.temp} °C</Typography>
-            <Typography>Wind: {weather.wind.speed} m/s</Typography>
-          </CardContent>
-        </Card>
-      )}
-
-      {forecast.length > 0 && (
-        <>
-          <Typography variant="h6" sx={{ mt: 4 }}>
-            4-Day Forecast
-          </Typography>
-          <Grid container spacing={2}>
-            {forecast.map((day, index) => {
-              const date = new Date(day.dt_txt);
-              const weekday = date.toLocaleDateString("en-US", {
-                weekday: "long",
-              });
-              return (
-                <Grid item xs={6} sm={3} key={index}>
-                  <Card>
-                    <CardContent>
-                      <Typography>{weekday}</Typography>
-                      <Typography>
-                        {day.weather[0].main}{" "}
-                        {weatherIcons[day.weather[0].main] || "☁️"}
-                      </Typography>
-                      <Typography>{day.main.temp} °C</Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              );
-            })}
-          </Grid>
-        </>
-      )}
+      {weather && <CurrentWeather weather={weather} />}
+      {forecast.length > 0 && <Forecast forecast={forecast} />}
     </Container>
   );
 };
