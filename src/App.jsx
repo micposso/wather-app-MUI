@@ -35,7 +35,7 @@ const App = () => {
   const [forecast, setForecast] = useState([]);
   const [suggestions, setSuggestions] = useState([]);
   const [coords, setCoords] = useState(null);
-  const apiKey = "b2efe5292c39fd73143a306f48ffcd6f"; // replace this with your OpenWeather API key
+  const apiKey = process.env.REACT_APP_OPENWEATHER_API_KEY; // replace this with your OpenWeather API key
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
